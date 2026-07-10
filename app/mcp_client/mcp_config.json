@@ -5,6 +5,12 @@
             "name": "Exa AI MCP Server",
             "type": "http",
             "mode": "streamable"
+        },
+        {
+            "url": "http://localhost:8000/multiLayout/mcp",
+            "name": "Local MCP Server",
+            "type": "http",
+            "mode": "streamable"
         }
     ]
 }

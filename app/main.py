@@ -1,14 +1,24 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from .mcp_client.mcp_client import OpenAi_MCP_Client
+from .mcp_client.authorized_mcp_client import OpenAiMCPClient
+CONFIG_PATH = "C:\\Users\\PAbhilash\\Documents\\FastAPI\\mcp_client\\app\\mcp_client\\mcp_config.json"
 
-app = FastAPI()
-mcp_client = OpenAi_MCP_Client()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    client = OpenAiMCPClient(CONFIG_PATH)
+    app.state.mcp_client = client
+
+    app.state.mcp_results = await client.run()
+    if "Error" in app.state.mcp_results:
+        print("MCP connection failed:", app.state.mcp_results["Error"])
+
+    try:
+        yield
+    finally:
+        await client.close()
+app = FastAPI(lifespan=lifespan)
+
+
 @app.get("/")
 async def root():
-    mcp_results = await mcp_client.run()
-    return {"message": mcp_results}
-
-@app.get("/user_query")
-async def user_query():
-    # Implementation for handling user queries
-    pass
+    return app.state.mcp_results
