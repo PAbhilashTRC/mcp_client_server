@@ -1,0 +1,10 @@
+{
+    "mcp_servers": [
+        {
+            "url": "https://chainflip-broker.io/mcp",
+            "name": "Exa AI MCP Server",
+            "type": "http",
+            "mode": "streamable"
+        }
+    ]
+}
