@@ -1,16 +1,16 @@
 {
-    "mcp_servers": [
-        {
-            "url": "https://chainflip-broker.io/mcp",
-            "name": "Exa AI MCP Server",
-            "type": "http",
-            "mode": "streamable"
-        },
-        {
-            "url": "http://localhost:8000/multiLayout/mcp",
-            "name": "Local MCP Server",
-            "type": "http",
-            "mode": "streamable"
-        }
-    ]
+    "mcp_servers": {
+            "Exa AI MCP Server": {
+                "url": "https://chainflip-broker.io/mcp",
+                "name": "Exa AI MCP Server",
+                "type": "http",
+                "mode": "streamable"
+            },
+            "Local MCP Server": {
+                    "url": "http://localhost:8000/multiLayout/mcp",
+                    "name": "Local MCP Server",
+                    "type": "http",
+                    "mode": "streamable"
+                }
+    }
 }

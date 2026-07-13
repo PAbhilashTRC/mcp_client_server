@@ -34,6 +34,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
 from mcp.shared.message import SessionMessage
 import mcp_types as types
+from fastapi.encoders import jsonable_encoder
 
 load_dotenv()
 
@@ -184,16 +185,16 @@ class OpenAiMCPClient:
         try:
             config = json.loads(self.config_path.read_text(encoding="utf-8"))
             instructions_by_server: dict[str, str] = {}
-            for server in config.get("mcp_servers", []):
-                url, name = server.get("url"), server.get("name", "unnamed")
-                mode = server.get("mode", "streamable")
-                if not url or server.get("type") != "http":
-                    raise ValueError(f"Invalid HTTP MCP configuration for {name}")
+            for server_name, server_config in config.get("mcp_servers", {}).items():
+                url = server_config.get("url")
+                mode = server_config.get("mode", "streamable")
+                if not url or server_config.get("type") != "http":
+                    raise ValueError(f"Invalid HTTP MCP configuration for {server_name}")
 
-                auth_config = server.get("authorization", {})
+                auth_config = server_config.get("authorization", {})
                 auth = self._oauth_provider(url, auth_config) if auth_config.get("enabled", False) else None
                 session, tools_result, instructions = await self.connect(url, mode, auth)
-                instructions_by_server[name] = instructions
+                instructions_by_server[server_name] = instructions
                 for tool in tools_result.tools:
                     openai_tool = self.mcp_tools_to_openai([tool])[0]
                     tool_name = openai_tool["function"]["name"]
@@ -201,7 +202,7 @@ class OpenAiMCPClient:
                         raise ValueError(f"Duplicate MCP tool name: {tool_name}")
                     self.available_tools.append(openai_tool)
                     self.tool_to_session[tool_name] = session
-                print(f"Connected to {name}: {len(tools_result.tools)} tools")
+                print(f"Connected to {server_name}: {len(tools_result.tools)} tools")
             return {"tools": self.available_tools, "instructions": instructions_by_server}
         except Exception as exc:
             await self.close()
@@ -217,15 +218,15 @@ class OpenAiMCPClient:
         initialize_result = await session.initialize()
         return session, await session.list_tools(), initialize_result.instructions or ""
 
-    async def call_func(self, parsed_result: list[dict[str, Any]]) -> list[Any]:
+    async def call_func(self, name: str, parameters: dict[str, Any]) -> list[Any]:
         """Call OpenAI-style function calls: {name: ..., parameters: {...}}."""
         results = []
-        for call in parsed_result:
-            name = call.get("name")
-            session = self.tool_to_session.get(name)
-            if not session:
-                raise ValueError(f"Unknown MCP tool: {name}")
-            results.append(await session.call_tool(name, arguments=call.get("parameters", {})))
+        params = parameters
+        session = self.tool_to_session.get(name)
+        if not session:
+            raise ValueError(f"Unknown MCP tool: {name}")
+        raw_results = await session.call_tool(name, arguments=params)
+        results.append(jsonable_encoder(raw_results))
         return results
 
     async def close(self) -> None:
