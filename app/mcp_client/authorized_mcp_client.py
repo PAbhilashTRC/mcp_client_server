@@ -167,7 +167,7 @@ class OpenAiMCPClient:
 
         metadata = OAuthClientMetadata.model_validate({
             "client_name": auth_config.get("client_name", "OpenAI MCP Client"),
-            "redirect_uris": [f"http://127.0.0.1:{port}/callback"],
+            "redirect_uris": [f"http://127.0.0.1:{port}/oauth2callback"],
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
         })
