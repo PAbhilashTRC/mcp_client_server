@@ -4,6 +4,12 @@
             "url": "http://localhost:8000/multiLayout/mcp",
             "type": "http",
             "mode": "streamable"
+        },
+        "RAG":{
+            "url": "http://localhost:8200/fieldOn_rag/mcp",
+            "type": "http",
+            "mode": "streamable"
         }
+
     }
 }

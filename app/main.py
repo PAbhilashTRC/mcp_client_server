@@ -7,14 +7,14 @@ from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.llm.open_ai import AzureOpenAIChatClient
 from app.model import UserQuery
-from .mcp_client.mcp_client import OpenAi_MCP_Client
+from .mcp_client.mcp_client import OpenAiMCPClient
 
 app = FastAPI()
 CONFIG_PATH = get_settings().mcp_config_path
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = OpenAi_MCP_Client(CONFIG_PATH)
+    client = OpenAiMCPClient(CONFIG_PATH)
     openai_client = AzureOpenAIChatClient(get_settings())
     app.state.mcp_client = client
     app.state.openai_client = openai_client
