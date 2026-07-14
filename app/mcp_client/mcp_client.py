@@ -4,7 +4,6 @@ def warn(*args, **kwargs):
 import json
 import warnings
 
-from exceptiongroup import catch
 warnings.warn = warn
 warnings.filterwarnings('ignore')
 
@@ -24,13 +23,14 @@ class ToolDefinition(TypedDict):
     input_schema: dict
     
 class OpenAi_MCP_Client():
-    def __init__(self):
+    def __init__(self, config_path: str):
+        self.config_path = config_path
         self.available_tools: List = [] # new
         self.available_session: types.InitializeResult = None
 
     async def run(self) -> Dict[str, Any]:
         try:
-            with open("C:\\Users\\PAbhilash\\Documents\\FastAPI\\mcp_client\\app\\mcp_client\\mcp_config.json", "r") as file:
+            with open(self.config_path, "r") as file:
                 config = json.load(file)
             servers = config.get("mcp_servers", {})
             print(f"Loaded MCP server configuration: {servers}")
@@ -38,6 +38,7 @@ class OpenAi_MCP_Client():
                 url = server_config.get("url")
                 type_ = server_config.get("type")
                 mode = server_config.get("mode", "default")
+                result = []
                 print(f"Connecting to MCP server: {server_name} ({type_}) at {url}")
                 if not url:
                     return {"Error": "MCP server URL is missing in the configuration."}
@@ -51,40 +52,29 @@ class OpenAi_MCP_Client():
                     result = await self.connect_to_streamable_server(url)
                 else:
                     result = await self.connect_to_streamable_server(url)
-                if result:
-                    tools = result.get("tools", [])
-                    instructions = result.get("instructions", "")
-                    openai_tools = self.mcp_tools_to_openai(tools)
-                    self.available_tools.extend(openai_tools)
-                    # print(f"Instructions from {name}: {instructions}")
-                    tool_names = [tool["function"]["name"] for tool in openai_tools]
-                    return {"tools": tool_names, "instructions": instructions}
+                if(result and "Error" not in result):
+                    print(f"Connected to {server_name}: {len(result.get('tools', []))} tools")
+                    openai_tool = self.mcp_tools_to_openai(result.get("tools", []))
+                    self.available_tools = openai_tool
+                    return {"tools": self.available_tools, "instructions": result.get("instructions", "")}
                 return {"Error": f"Failed to connect to MCP server: {server_name} at {url}"}
 
         except Exception as e:
             print(f"Error occurred: {e}")
             return {"Error": str(e)}
 
-    async def call_func(self, parsed_result):
-        for call in parsed_result:
-            func_name = call.get("name")
-            params = call.get("parameters", {})
-
+    async def call_func(self, func_name:str, args:dict[str, Any]) -> None:
             for tool_call in self.available_tools:
                 if tool_call["name"] == func_name:
-                    session = self.tool_to_session[func_name]
-                    result = await session.call_tool(func_name, arguments=params)
+                    result = await self.available_session.call_tool(func_name, arguments=args)
                     print("Results from DB : ", result.content[0].text)
+                    break
                 else:
-                    print(f"Unknown function: {func_name}, {params}")
+                    print(f"Unknown function: {func_name}, {args}")
 
     async def connect_to_sse_server(self, url: str) -> None:
         """Connect to a single MCP server."""
         try:
-            # async with streamable_http_client(url) as (
-            #     read_stream,
-            #     write_stream
-            # ):
             async with sse_client(url) as (read_stream, write_stream):
                 async with ClientSession(read_stream, write_stream) as session:
                     # Initialize the connection
