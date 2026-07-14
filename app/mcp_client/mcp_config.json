@@ -1,10 +1,9 @@
 {
-    "mcp_servers": [
-        {
-            "url": "https://chainflip-broker.io/mcp",
-            "name": "Exa AI MCP Server",
+    "mcp_servers": {
+        "Multi layout":{
+            "url": "http://localhost:8000/multiLayout/mcp",
             "type": "http",
             "mode": "streamable"
         }
-    ]
+    }
 }

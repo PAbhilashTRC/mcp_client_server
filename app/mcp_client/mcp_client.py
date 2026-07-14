@@ -32,14 +32,13 @@ class OpenAi_MCP_Client():
         try:
             with open("C:\\Users\\PAbhilash\\Documents\\FastAPI\\mcp_client\\app\\mcp_client\\mcp_config.json", "r") as file:
                 config = json.load(file)
-            servers = config.get("mcp_servers", [])
+            servers = config.get("mcp_servers", {})
             print(f"Loaded MCP server configuration: {servers}")
-            for server in servers:
-                url = server.get("url")
-                name = server.get("name")
-                type_ = server.get("type")
-                mode = server.get("mode", "default")
-                print(f"Connecting to MCP server: {name} ({type_}) at {url}")
+            for server_name, server_config in servers.items():
+                url = server_config.get("url")
+                type_ = server_config.get("type")
+                mode = server_config.get("mode", "default")
+                print(f"Connecting to MCP server: {server_name} ({type_}) at {url}")
                 if not url:
                     return {"Error": "MCP server URL is missing in the configuration."}
                 if not type_:
@@ -60,7 +59,7 @@ class OpenAi_MCP_Client():
                     # print(f"Instructions from {name}: {instructions}")
                     tool_names = [tool["function"]["name"] for tool in openai_tools]
                     return {"tools": tool_names, "instructions": instructions}
-                return {"Error": f"Failed to connect to MCP server: {name} at {url}"}
+                return {"Error": f"Failed to connect to MCP server: {server_name} at {url}"}
 
         except Exception as e:
             print(f"Error occurred: {e}")
