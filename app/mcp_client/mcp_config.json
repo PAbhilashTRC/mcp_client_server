@@ -9,6 +9,14 @@
             "url": "http://localhost:8200/fieldOn_rag/mcp",
             "type": "http",
             "mode": "streamable"
+        },
+        "Gmail": {
+            "command": "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp\\.venv\\Scripts\\python.exe",
+            "args": [
+                "-m",
+                "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp"
+            ],
+            "type": "stdio"
         }
 
     }
