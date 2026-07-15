@@ -1,23 +1,21 @@
 {
     "mcp_servers": {
-            "Exa AI MCP Server": {
-                "url": "https://chainflip-broker.io/mcp",
+        "Local MCP Server": {
+                "url": "http://localhost:8000/multiLayout/mcp",
                 "type": "http",
                 "mode": "streamable"
             },
-            "Local MCP Server": {
-                    "url": "http://localhost:8000/multiLayout/mcp",
-                    "type": "http",
-                    "mode": "streamable"
-                },
-            "github": {
-                    "type": "http",
-                    "url": "https://api.githubcopilot.com/mcp",
-                    "mode": "streamable",
-                    "authorization": {
-                        "enabled": true,
-                        "callback_port": 3030
-                    }
-                }
+        "Gmail Server": {
+            "command": "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp\\.venv\\Scripts\\python.exe",
+            "args": [
+                "-m",
+                "gmail_mcp"
+            ],
+            "type": "stdio",
+            "authorization": {
+                "enabled": true,
+                "callback_port": 3030
+            }
+        }
     }
 }

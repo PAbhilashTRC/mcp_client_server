@@ -1,13 +1,26 @@
 """MCP client with optional OAuth authorization for SSE and Streamable HTTP.
 
 Example mcp_config.json entry:
-{
-  "name": "protected-server",
+"protected-server": {
   "url": "http://localhost:8000/mcp",
   "type": "http",
   "mode": "streamable",
   "authorization": {"enabled": true, "callback_port": 3030}
-}
+},
+"Exa AI MCP Server": {
+                "url": "https://chainflip-broker.io/mcp",
+                "type": "http",
+                "mode": "streamable"
+            },
+"github": {
+                    "type": "http",
+                    "url": "https://api.githubcopilot.com/mcp",
+                    "mode": "streamable",
+                    "authorization": {
+                        "enabled": true,
+                        "callback_port": 3030
+                    }
+                }
 """
 
 from __future__ import annotations
@@ -26,11 +39,12 @@ from urllib.parse import parse_qs, urlsplit, urlunsplit
 
 import httpx
 from dotenv import load_dotenv
-from mcp import ClientSession
+from mcp import ClientSession, StdioServerParameters
 from mcp.client._transport import ReadStream, WriteStream
 from mcp.client.auth import AuthorizationCodeResult, OAuthClientProvider, TokenStorage
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
+from mcp.client.stdio import stdio_client
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
 from mcp.shared.message import SessionMessage
 import mcp_types as types
@@ -186,14 +200,18 @@ class OpenAiMCPClient:
             config = json.loads(self.config_path.read_text(encoding="utf-8"))
             instructions_by_server: dict[str, str] = {}
             for server_name, server_config in config.get("mcp_servers", {}).items():
-                url = server_config.get("url")
-                mode = server_config.get("mode", "streamable")
-                if not url or server_config.get("type") != "http":
-                    raise ValueError(f"Invalid HTTP MCP configuration for {server_name}")
-
+                if not (server_config.get("type") == "http" or server_config.get("type") == "stdio"):
+                    raise ValueError(f"Invalid MCP configuration for {server_name}")
                 auth_config = server_config.get("authorization", {})
-                auth = self._oauth_provider(url, auth_config) if auth_config.get("enabled", False) else None
-                session, tools_result, instructions = await self.connect(url, mode, auth)
+                if server_config.get("type") == "http":
+                    url = server_config.get("url")
+                    mode = server_config.get("mode", "streamable")
+                    auth = self._oauth_provider(url, auth_config) if auth_config.get("enabled", False) else None
+                    session, tools_result, instructions = await self.connect(url, mode, auth)
+                elif server_config.get("type") == "stdio":
+                    url = None
+                    mode = "streamable"
+                    session, tools_result, instructions = await self.connect_to_stdio(server_config, auth)
                 instructions_by_server[server_name] = instructions
                 for tool in tools_result.tools:
                     openai_tool = self.mcp_tools_to_openai([tool])[0]
@@ -214,6 +232,13 @@ class OpenAiMCPClient:
         else:
             http_client = await self._resources.enter_async_context(httpx.AsyncClient(auth=auth, follow_redirects=True))
             read_stream, write_stream = await self._resources.enter_async_context(streamable_http_client(url, http_client=http_client))
+        session = await self._resources.enter_async_context(ClientSession(read_stream, write_stream))
+        initialize_result = await session.initialize()
+        return session, await session.list_tools(), initialize_result.instructions or ""
+    
+    async def connect_to_stdio(self, server_config: dict, auth: OAuthClientProvider | None) -> tuple[ClientSession, types.ListToolsResult, str]:
+        server_params = StdioServerParameters(**server_config)
+        read_stream, write_stream = await self._resources.enter_async_context(stdio_client(server_params))
         session = await self._resources.enter_async_context(ClientSession(read_stream, write_stream))
         initialize_result = await session.initialize()
         return session, await session.list_tools(), initialize_result.instructions or ""
