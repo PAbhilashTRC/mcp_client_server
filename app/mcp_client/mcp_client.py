@@ -14,8 +14,9 @@ warnings.filterwarnings('ignore')
 from typing import Any, Dict, List, TypedDict
 import os
 from dotenv import load_dotenv
-from mcp import ClientSession
+from mcp import ClientSession, StdioServerParameters
 from mcp.client.streamable_http import streamable_http_client
+from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
 import mcp_types as types
 load_dotenv()
@@ -33,11 +34,16 @@ class OpenAiMCPClient():
             config = json.loads(self.config_path.read_text(encoding="utf-8"))
             instructions_by_server: dict[str, str] = {}
             for server_name, server_config in config.get("mcp_servers", {}).items():
-                url = server_config.get("url")
-                mode = server_config.get("mode", "streamable")
-                if not url or server_config.get("type") != "http":
-                    raise ValueError(f"Invalid HTTP MCP configuration for {server_name}")
-                session, tools_result, instructions = await self.connect(url, mode)
+                if not (server_config.get("type") == "http" or server_config.get("type") == "stdio"):
+                    raise ValueError(f"Invalid MCP configuration for {server_name}")
+                if server_config.get("type") == "http":
+                    url = server_config.get("url")
+                    mode = server_config.get("mode", "streamable")
+                    session, tools_result, instructions = await self.connect(url, mode)
+                elif server_config.get("type") == "stdio":
+                    url = None
+                    mode = "streamable"
+                    session, tools_result, instructions = await self.connect_to_stdio(server_config)
                 instructions_by_server[server_name] = instructions
                 for tool in tools_result.tools:
                     openai_tool = self.mcp_tools_to_openai([tool])[0]
@@ -57,6 +63,13 @@ class OpenAiMCPClient():
             read_stream, write_stream = await self._resources.enter_async_context(sse_client(url, timeout=60.0))
         else:
             read_stream, write_stream = await self._resources.enter_async_context(streamable_http_client(url))
+        session = await self._resources.enter_async_context(ClientSession(read_stream, write_stream))
+        initialize_result = await session.initialize()
+        return session, await session.list_tools(), initialize_result.instructions or ""
+    
+    async def connect_to_stdio(self, server_config: dict) -> tuple[ClientSession, types.ListToolsResult, str]:
+        server_params = StdioServerParameters(**server_config)
+        read_stream, write_stream = await self._resources.enter_async_context(stdio_client(server_params))
         session = await self._resources.enter_async_context(ClientSession(read_stream, write_stream))
         initialize_result = await session.initialize()
         return session, await session.list_tools(), initialize_result.instructions or ""

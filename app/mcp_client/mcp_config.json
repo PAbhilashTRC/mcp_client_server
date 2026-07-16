@@ -1,12 +1,12 @@
 {
     "mcp_servers": {
-        "Multi layout":{
-            "url": "http://localhost:8000/multiLayout/mcp",
+        "RAG":{
+            "url": "http://localhost:8200/fieldOn_rag/mcp",
             "type": "http",
             "mode": "streamable"
         },
-        "RAG":{
-            "url": "http://localhost:8200/fieldOn_rag/mcp",
+        "lemur AI": {
+            "url": "http://localhost:8300/lemurAI/mcp",
             "type": "http",
             "mode": "streamable"
         },
@@ -14,10 +14,15 @@
             "command": "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp\\.venv\\Scripts\\python.exe",
             "args": [
                 "-m",
-                "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp"
+                "gmail_mcp"
             ],
             "type": "stdio"
-        }
+        },
+        "outlook": {
+            "command": "C:\\Users\\PAbhilash\\Documents\\FastAPI\\.gmail\\Scripts\\python.exe",
+            "args": ["-m", "outlook_mcp_server"],
+            "type": "stdio"
+            }
 
     }
 }
