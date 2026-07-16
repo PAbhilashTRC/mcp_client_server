@@ -5,11 +5,6 @@
             "type": "http",
             "mode": "streamable"
         },
-        "lemur AI": {
-            "url": "http://localhost:8300/lemurAI/mcp",
-            "type": "http",
-            "mode": "streamable"
-        },
         "Gmail": {
             "command": "C:\\Users\\PAbhilash\\Documents\\FastAPI\\gmail-mcp\\.venv\\Scripts\\python.exe",
             "args": [
