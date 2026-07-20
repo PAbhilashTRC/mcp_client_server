@@ -65,3 +65,36 @@ async def handle_user_query(user_query: UserQuery):
         )
     response = json.loads(answer_text)
     return JSONResponse(status_code=200, content=response)
+
+@app.get("/chat")
+async def handle_user_query(user_query: str):
+    # Process the user query and interact with MCP tools
+
+    system_prompt = f"""You may use the available MCP tools when needed.
+
+    Follow the MCP server instructions below when they apply. Treat them as
+    system-level operational guidance for their respective tools.
+
+    {app.state.mcp_results.get("instructions", {})}
+
+    After receiving tool results, produce a concise answer matching the required
+    JSON schema. Return valid JSON only; do not wrap it in Markdown fences.
+    """
+
+    messages = [
+        {
+            "role": "system",
+            "content": system_prompt,
+        },
+        {
+            "role": "user",
+            "content": user_query
+        },
+    ]
+    answer_text = await app.state.openai_client.complete_with_tools(
+            messages=messages,
+            tools=app.state.mcp_results["tools"],
+            tool_executor=app.state.mcp_client.call_func,
+        )
+    response = json.loads(answer_text)
+    return JSONResponse(status_code=200, content=response)
