@@ -265,6 +265,7 @@ After the server starts:
 ```
 Application
 http://localhost:8000
+```
 
 ---
 
