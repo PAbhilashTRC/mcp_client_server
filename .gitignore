@@ -2,3 +2,4 @@
 /app/__pycache__/*
 /app/mcp_client/__pycache__/*
 /.env
+/app/llm/__pycache__/*
